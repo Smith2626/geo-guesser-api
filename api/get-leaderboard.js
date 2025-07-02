@@ -1,52 +1,44 @@
 // api/get-leaderboard.js
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize the Supabase client using environment variables
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
 
 export default async function handler(req, res) {
-  // --- FIX: Add CORS headers to allow requests from any domain ---
-  // For better security, you could replace '*' with your actual website's domain
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  // Handle pre-flight OPTIONS request
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  // Ensure the request method is GET
+  // Only allow GET requests for fetching the leaderboard
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    // Calculate the date 7 days ago to filter for weekly scores
+    // Calculate the date 7 days ago
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Fetch the top 10 scores from the last 7 days from the 'scores' table
+    // This is the database query:
+    // 1. Select the name and score columns
+    // 2. From the 'scores' table
+    // 3. Where 'created_at' is greater than or equal to 7 days ago
+    // 4. Order by score descending
+    // 5. Limit to the top 10 results
     const { data, error } = await supabase
       .from('scores')
       .select('name, score')
-      .gte('created_at', sevenDaysAgo.toISOString()) // gte = "greater than or equal to"
+      .gte('created_at', sevenDaysAgo.toISOString()) // .gte means "greater than or equal to"
       .order('score', { ascending: false })
       .limit(10);
 
     if (error) {
-      throw error; // Let the catch block handle the error
+      throw error;
     }
 
     // Send the leaderboard data back to the game
     return res.status(200).json(data);
 
   } catch (error) {
-    // Log the error on the server and send a generic error message
     console.error('Error fetching leaderboard:', error.message);
-    return res.status(500).json({ error: 'An internal error occurred while fetching scores.' });
+    return res.status(500).json({ error: 'An internal error occurred.' });
   }
 }
