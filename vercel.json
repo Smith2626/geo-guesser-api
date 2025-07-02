@@ -11,6 +11,3 @@
     }
   ]
 }
-```**For better security later**, you can change the `"value": "*"` for `Access-Control-Allow-Origin` to `"value": "https://your-wordpress-site.com"`. But for now, `*` will ensure it works.
-
-Your folder structure should now look like this:
